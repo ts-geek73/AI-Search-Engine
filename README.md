@@ -1,8 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI Search Engine
 
-## Getting Started
+A modern, fast, and intelligent document search engine and AI assistant. Upload your documents to your own knowledge base and seamlessly chat with them using Retrieval-Augmented Generation (RAG). Powered by Next.js, Supabase, and Google Gemini.
 
-First, run the development server:
+## 🚀 Features
+
+- **Knowledge Base Management**: Drag-and-drop or browse to upload documents (`.pdf`, `.txt`, `.docx`) into your personal knowledge base.
+- **Intelligent Search & Chat**: Ask questions about your documents. The system uses vector embeddings to retrieve relevant context and Google Gemini to synthesize a precise answer.
+- **Rich Markdown Support**: The AI assistant responds with beautifully formatted GitHub Flavored Markdown, including tables, code blocks, lists, and headings.
+- **Premium UI/UX**: 
+  - Stunning glassmorphic design system.
+  - Fully responsive grid layout that works flawlessly on desktop and mobile.
+  - Auto-resizing chat text areas, typing indicators, and smooth transition animations.
+- **Cloud Storage & Database**: Securely stores files in Supabase Storage and manages metadata and embeddings in PostgreSQL.
+
+## 🛠️ Tech Stack
+
+- **Framework**: [Next.js 16](https://nextjs.org/) (App Router)
+- **Frontend**: [React 19](https://react.dev/), [Tailwind CSS v4](https://tailwindcss.com/)
+- **UI Components**: [Lucide React](https://lucide.dev/) (Icons), [React Markdown](https://github.com/remarkjs/react-markdown) with `remark-gfm`
+- **Backend & Database**: [Supabase](https://supabase.com/) (PostgreSQL, Vector Search, Storage)
+- **AI Models**: [Google Generative AI (Gemini)](https://ai.google.dev/)
+- **File Parsing**: `pdf-parse` for text extraction
+
+## 📦 Getting Started
+
+### Prerequisites
+
+- Node.js 18+ and npm
+- A [Supabase](https://supabase.com) account and project
+- A [Google Gemini API Key](https://aistudio.google.com/)
+
+### 1. Clone & Install
+
+```bash
+git clone https://github.com/your-username/ai-search-engine.git
+cd ai-search-engine
+npm install
+```
+
+### 2. Environment Variables
+
+Create a `.env` or `.env.local` file in the root of the project with the following keys:
+
+```env
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+
+# Google Gemini API
+GEMINI_API_KEY=your_gemini_api_key
+```
+
+### 3. Database Setup
+
+Ensure your Supabase project is configured with a Storage bucket (e.g., `docs_bucket`) and a PostgreSQL table set up with the pgvector extension to store document chunks and embeddings.
+
+### 4. Run the Development Server
 
 ```bash
 npm run dev
@@ -14,23 +68,19 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser to explore the AI Search Engine.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📁 Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `src/app/`: Next.js App Router pages and API routes (`/api/chat`, `/api/docs`, `/api/search`, `/api/upload`).
+- `src/components/`: Reusable React components including the `Sidebar`, `ChatInterface`, and `ToastProvider`.
+- `src/lib/`: Utility functions and library instantiations (Supabase client, Gemini AI setup).
+- `src/app/globals.css`: Tailwind configuration and global glassmorphism CSS utilities.
 
-## Learn More
+## 🤝 Contributing
 
-To learn more about Next.js, take a look at the following resources:
+Contributions, issues, and feature requests are welcome! Feel free to check the issues page.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 📝 License
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This project is licensed under the MIT License.
