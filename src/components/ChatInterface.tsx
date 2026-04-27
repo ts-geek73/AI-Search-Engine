@@ -3,6 +3,9 @@
 import { Bot, Send, User } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
+const MIN_ROWS = 1;
+const MAX_ROWS = 5;
+const LINE_HEIGHT = 24;
 
 interface Message {
   id: string;
@@ -24,6 +27,23 @@ export function ChatInterface() {
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+
+    el.style.height = "auto";
+
+    const scrollHeight = el.scrollHeight;
+    const minHeight = LINE_HEIGHT * MIN_ROWS;
+    const maxHeight = LINE_HEIGHT * MAX_ROWS;
+
+    const newHeight = Math.min(Math.max(scrollHeight, minHeight), maxHeight);
+
+    el.style.height = `${newHeight}px`;
+    el.style.overflowY = scrollHeight > maxHeight ? "auto" : "hidden";
+  }, [inputValue]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -111,15 +131,15 @@ export function ChatInterface() {
   };
 
   return (
-    <div className="glass-panel flex flex-col h-[calc(100vh-32px)] !p-6 m-4 ml-2 overflow-hidden relative group">
+    <div className="glass-panel flex flex-col h-full rounded-3xl overflow-hidden relative group !p-6 gap-3">
       <div className="absolute inset-0 bg-gradient-to-br from-[rgba(53,133,142,0.05)] to-transparent pointer-events-none" />
-      <div className="p-6 relative z-10">
+      <div className="relative z-10">
         <h2 className="text-xl font-bold bg-gradient-to-r from-accent-color to-secondary-color bg-clip-text text-transparent tracking-wide">
           AI Search Assistant
         </h2>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 relative z-10">
+      <div className="flex-1 overflow-y-auto flex flex-col gap-6 relative z-10 min-h-0 !pr-2 !pt-2">
         {messages.length === 0 && (
           <div className="flex-1 flex flex-col items-center justify-center text-center opacity-40">
             <Bot className="w-16 h-16 text-accent-color mb-4 opacity-50" />
@@ -186,11 +206,11 @@ export function ChatInterface() {
 
         {isTyping && (
           <div className="flex w-full justify-start">
-            <div className="max-w-[80%] flex gap-4 py-4 px-5 items-center rounded-2xl leading-relaxed animate-slide-up bg-[rgba(255,255,255,0.6)] border border-[rgba(53,133,142,0.1)] rounded-bl-sm">
+            <div className="max-w-[80%] flex py-4 px-5 items-center rounded-2xl leading-relaxed animate-slide-up bg-[rgba(255,255,255,0.6)] border border-[rgba(53,133,142,0.1)] ">
               <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 bg-gradient-to-br from-accent-color to-secondary-color text-white">
                 <Bot className="w-5 h-5" />
               </div>
-              <div className="flex gap-1.5 items-center">
+              <div className="flex gap-1.5 !px-4 items-center">
                 <span
                   className="w-1.5 h-1.5 bg-text-secondary rounded-full animate-typing"
                   style={{ animationDelay: "-0.32s" }}
@@ -207,18 +227,19 @@ export function ChatInterface() {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-6 relative z-10 bg-[rgba(255,255,255,0.3)]">
+      <div className="relative z-10">
         <form
           onSubmit={handleSubmit}
-          className="flex gap-3 bg-[rgba(255,255,255,0.5)] border border-[rgba(53,133,142,0.2)] rounded-2xl !px-4 !py-2 transition-all duration-500 hover:bg-[rgba(255,255,255,0.7)] focus-within:border-[rgba(53,133,142,0.5)] focus-within:bg-[rgba(255,255,255,0.9)] focus-within:shadow-[0_0_30px_rgba(53,133,142,0.15)] backdrop-blur-sm"
+          className="flex gap-3 bg-[rgba(255,255,255,0.5)] border border-[rgba(53,133,142,0.2)] rounded-2xl px-4 !py-1 transition-all duration-500 hover:bg-[rgba(255,255,255,0.7)] focus-within:border-[rgba(53,133,142,0.5)] focus-within:bg-[rgba(255,255,255,0.9)] focus-within:shadow-[0_0_30px_rgba(53,133,142,0.15)] backdrop-blur-sm"
         >
           <textarea
             value={inputValue}
+            ref={textareaRef}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask anything about your documents..."
-            className="flex-1 pl-2 bg-transparent border-none text-text-primary text-base resize-none outline-none p-3 placeholder:text-[rgba(31,41,55,0.4)]"
-            rows={2}
+            className="flex-1 !pl-4 bg-transparent border-none text-text-primary text-base resize-none outline-none p-3 placeholder:text-[rgba(31,41,55,0.6)]"
+            rows={MIN_ROWS}
           />
           <button
             type="submit"

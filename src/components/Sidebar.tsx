@@ -211,13 +211,13 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="glass-panel relative flex flex-col h-[calc(95vh-64px)] gap-5">
-      <h2 className="text-xl text-center py-4 font-semibold text-gray-900 tracking-tight">
+    <aside className="glass-panel relative flex flex-col h-full gap-5 rounded-3xl !p-4">
+      <h2 className="text-xl text-center font-semibold text-gray-900 tracking-tight">
         Knowledge Base
       </h2>
 
       <div
-        className={`!p-6 h-[calc(30vh-32px)] flex items-center justify-center border-2 border-dashed rounded-2xl text-center relative transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden group ${
+        className={`p-6 min-h-[160px] flex items-center justify-center border-2 border-dashed rounded-2xl text-center relative transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden group ${
           isDragging || isUploading
             ? "border-accent-color bg-[rgba(53,133,142,0.1)] shadow-[0_0_30px_rgba(53,133,142,0.2)]"
             : "border-[rgba(53,133,142,0.2)] bg-[rgba(255,255,255,0.4)] hover:border-accent-hover hover:bg-[rgba(53,133,142,0.05)] hover:shadow-[0_0_20px_rgba(53,133,142,0.1)]"
@@ -258,11 +258,11 @@ export function Sidebar() {
       )}
       {docsError && <p className="text-xs text-red-600 px-1">{docsError}</p>}
 
-      <div className="flex-1 flex flex-col !px-6 !pb-6">
-        <h3 className="text-[0.85rem] uppercase tracking-wider text-text-secondary mb-4 font-semibold">
+      <div className="flex-1 flex flex-col min-h-0">
+        <h3 className="text-[0.85rem] uppercase tracking-wider text-text-secondary !mb-2 font-semibold">
           Uploaded Documents
         </h3>
-        <ul className="list-none overflow-y-auto flex-1 flex flex-col gap-3 pr-2">
+        <ul className="list-none overflow-y-auto flex-1 flex flex-col gap-1.5 pr-2">
           {isLoadingDocs ? (
             <div className="flex flex-col items-center justify-center h-full text-center opacity-50 space-y-3">
               <FileTextIcon className="w-8 h-8 text-text-secondary" />
