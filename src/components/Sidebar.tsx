@@ -3,6 +3,7 @@
 import { ExternalLink, FileTextIcon, Trash2, Upload } from "lucide-react";
 import Link from "next/link";
 import React, { useCallback, useEffect, useState } from "react";
+import { toast } from "react-toastify";
 
 interface DocumentInfo {
   id: string;
@@ -116,6 +117,8 @@ export function Sidebar() {
   };
 
   const handleUpload = async (file: File) => {
+    const toastId = toast.loading("Uploading document...");
+
     try {
       setUploadError(null);
       setIsUploading(true);
@@ -144,16 +147,30 @@ export function Sidebar() {
       }
 
       await refreshDocuments();
+      toast.update(toastId, {
+        render: "Document uploaded successfully.",
+        type: "success",
+        isLoading: false,
+        autoClose: 2500,
+      });
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to upload file.";
       setUploadError(message);
+      toast.update(toastId, {
+        render: message,
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
+      });
     } finally {
       setIsUploading(false);
     }
   };
 
   const handleDelete = async (docId: string) => {
+    const toastId = toast.loading("Deleting document...");
+
     try {
       setDocsError(null);
       setDeletingDocId(docId);
@@ -172,17 +189,29 @@ export function Sidebar() {
       }
 
       await refreshDocuments();
+      toast.update(toastId, {
+        render: payload.message || "Document deleted successfully.",
+        type: "success",
+        isLoading: false,
+        autoClose: 2500,
+      });
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to delete document.";
       setDocsError(message);
+      toast.update(toastId, {
+        render: message,
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
+      });
     } finally {
       setDeletingDocId(null);
     }
   };
 
   return (
-    <aside className="glass-panel flex flex-col h-[calc(95vh-64px)] gap-5">
+    <aside className="glass-panel relative flex flex-col h-[calc(95vh-64px)] gap-5">
       <h2 className="text-xl text-center py-4 font-semibold text-gray-900 tracking-tight">
         Knowledge Base
       </h2>
@@ -224,10 +253,10 @@ export function Sidebar() {
           )}
         </label>
       </div>
-      {uploadError && (
+      {/* {uploadError && (
         <p className="text-xs text-red-600 px-1">{uploadError}</p>
-      )}
-      {docsError && <p className="text-xs text-red-600 px-1">{docsError}</p>}
+      )} */}
+      {/* {docsError && <p className="text-xs text-red-600 px-1">{docsError}</p>} */}
 
       <div className="flex-1 flex flex-col !px-6 !pb-6">
         <h3 className="text-[0.85rem] uppercase tracking-wider text-text-secondary mb-4 font-semibold">
@@ -272,7 +301,7 @@ export function Sidebar() {
                     href={doc?.url ?? ""}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center"
+                    className="inline-flex items-center justify-center cursor-pointer"
                     aria-label={`Open ${doc.name}`}
                   >
                     <ExternalLink className="w-4 h-4 text-text-secondary hover:text-accent-color transition-colors" />
@@ -281,7 +310,7 @@ export function Sidebar() {
                     type="button"
                     onClick={() => handleDelete(doc.id)}
                     disabled={deletingDocId === doc.id}
-                    className="inline-flex items-center justify-center text-text-secondary hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center justify-center cursor-pointer text-text-secondary hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     aria-label={`Delete ${doc.name}`}
                     title="Delete document"
                   >

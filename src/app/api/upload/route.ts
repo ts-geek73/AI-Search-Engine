@@ -13,7 +13,6 @@ export async function POST(request: Request) {
       { file: fileData },
       { abortEarly: false },
     );
-    console.log("🚀 ~ POST ~ file:", file)
 
     const supabase = getSupabaseServerClient();
     const bucket = DOCS_BUCKET;
@@ -44,7 +43,7 @@ export async function POST(request: Request) {
         file_name: file.name,
         bucket_key: fileKey,
         file_url: publicUrl,
-        embedded_data: [],
+        embedded_data: null,
       })
       .select("id, file_name, bucket_key, file_url, created_at")
       .single();

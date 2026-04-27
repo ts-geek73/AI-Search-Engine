@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ToastProvider } from "@/components/ToastProvider";
 import { Outfit } from "next/font/google";
 import "./globals.css";
 
@@ -19,7 +20,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${outfit.variable}`}>{children}</body>
+      <body className={`${outfit.variable}`}>
+        {children}
+        <ToastProvider />
+      </body>
     </html>
   );
 }
