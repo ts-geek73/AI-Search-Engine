@@ -1,13 +1,22 @@
 "use client";
 
-import { Bot, FileText, Send, User } from "lucide-react";
+import { Bot, Send, User } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
 
 interface Message {
   id: string;
   type: "user" | "bot";
   content: string;
-  sources?: string[];
+}
+
+interface SearchMatch {
+  id: string;
+  doc_id: string;
+  chunk_index: number;
+  title: string | null;
+  content: string;
+  similarity: number;
 }
 
 export function ChatInterface() {
@@ -39,28 +48,71 @@ export function ChatInterface() {
     setInputValue("");
     setIsTyping(true);
 
-    setTimeout(() => {
+    try {
+      // Step 1: search for relevant chunks
+      const searchRes = await fetch("/api/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query, matchCount: 10 }),
+      });
+
+      const searchPayload = (await searchRes.json()) as {
+        error?: string;
+        matches?: SearchMatch[];
+      };
+
+      if (!searchRes.ok)
+        throw new Error(searchPayload.error || "Search failed.");
+
+      const matches = searchPayload.matches ?? [];
+      const context = matches.map((m) => m.content).join("\n\n---\n\n");
+
+      const chatRes = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query, context }),
+      });
+
+      const chatPayload = (await chatRes.json()) as {
+        error?: string;
+        answer?: string;
+      };
+
+      if (!chatRes.ok) throw new Error(chatPayload.error || "Chat failed.");
+
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: "bot",
-        content: `I've analyzed the uploaded documents based on your query "${query}". Here is the synthesized information you requested.`,
-        sources: [], // Will be populated by the actual API
+        content: chatPayload.answer ?? "No answer returned.",
       };
+
       setMessages((prev) => [...prev, botMessage]);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Something went wrong.";
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: (Date.now() + 1).toString(),
+          type: "bot",
+          content: `Sorry, I couldn't complete that: ${message}`,
+        },
+      ]);
+    } finally {
       setIsTyping(false);
-    }, 2000);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSubmit(e);
+      void handleSubmit(e);
     }
   };
 
   return (
-    <div className="glass-panel flex flex-col h-[calc(100vh-32px)] m-4 ml-2 overflow-hidden relative group">
-      <div className="absolute inset-0 bg-gradient-to-br from-[rgba(53,133,142,0.05)] to-transparent pointer-events-none"></div>
+    <div className="glass-panel flex flex-col h-[calc(100vh-32px)] !p-6 m-4 ml-2 overflow-hidden relative group">
+      <div className="absolute inset-0 bg-gradient-to-br from-[rgba(53,133,142,0.05)] to-transparent pointer-events-none" />
       <div className="p-6 relative z-10">
         <h2 className="text-xl font-bold bg-gradient-to-r from-accent-color to-secondary-color bg-clip-text text-transparent tracking-wide">
           AI Search Assistant
@@ -80,16 +132,17 @@ export function ChatInterface() {
             </p>
           </div>
         )}
+
         {messages.map((msg) => (
           <div
             key={msg.id}
             className={`flex w-full ${msg.type === "user" ? "justify-end" : "justify-start"}`}
           >
             <div
-              className={`max-w-[85%] flex gap-4 py-4 px-5 rounded-2xl leading-relaxed text-[0.95rem] animate-slide-up shadow-lg ${
+              className={`max-w-[85%] flex py-4 px-5 rounded-xl leading-relaxed text-[0.95rem] animate-slide-up shadow-lg ${
                 msg.type === "bot"
-                  ? "bg-[rgba(255,255,255,0.7)] backdrop-blur-md border border-[rgba(53,133,142,0.2)] rounded-tl-none shadow-[0_4px_30px_rgba(53,133,142,0.1)]"
-                  : "bg-gradient-to-br from-[rgba(53,133,142,0.15)] to-[rgba(125,167,140,0.15)] backdrop-blur-md border border-[rgba(53,133,142,0.1)] rounded-tr-none flex-row-reverse shadow-[0_4px_30px_rgba(53,133,142,0.1)]"
+                  ? "bg-[rgba(255,255,255,0.7)] backdrop-blur-md border border-[rgba(53,133,142,0.2)] shadow-[0_4px_30px_rgba(53,133,142,0.1)]"
+                  : "bg-gradient-to-br from-[rgba(53,133,142,0.15)] to-[rgba(125,167,140,0.15)] backdrop-blur-md border border-[rgba(53,133,142,0.1)]  flex-row-reverse shadow-[0_4px_30px_rgba(53,133,142,0.1)]"
               }`}
             >
               <div
@@ -105,44 +158,48 @@ export function ChatInterface() {
                   <Bot className="w-5 h-5" />
                 )}
               </div>
-              <div className="flex flex-col gap-3 text-text-primary">
-                <p>{msg.content}</p>
-                {msg.sources && msg.sources.length > 0 && (
-                  <div className="flex flex-wrap gap-2 items-center mt-2 pt-3 border-t border-[rgba(53,133,142,0.1)]">
-                    <span className="text-xs text-text-secondary uppercase tracking-wider">
-                      Sources:
-                    </span>
-                    {msg.sources.map((src, idx) => (
-                      <span
-                        key={idx}
-                        className="inline-flex items-center gap-1.5 py-1 px-2.5 bg-[rgba(53,133,142,0.08)] rounded-full text-xs text-text-secondary transition-all duration-200 cursor-pointer hover:bg-[rgba(53,133,142,0.15)] hover:text-text-primary"
-                      >
-                        <FileText className="w-3.5 h-3.5" />
-                        {src}
-                      </span>
-                    ))}
+
+              <div className="flex flex-col justify-center !px-2 text-text-primary min-w-0">
+                {msg.type === "bot" ? (
+                  <div
+                    className="prose prose-sm max-w-none
+                    prose-headings:text-text-primary prose-headings:font-semibold
+                    prose-p:text-text-primary prose-p:leading-relaxed prose-p:my-1
+                    prose-strong:text-text-primary
+                    prose-ul:text-text-primary prose-ul:my-1 prose-ul:pl-4
+                    prose-ol:text-text-primary prose-ol:my-1 prose-ol:pl-4
+                    prose-li:my-0.5
+                    prose-code:bg-[rgba(53,133,142,0.1)] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm
+                    prose-pre:bg-[rgba(53,133,142,0.08)] prose-pre:border prose-pre:border-[rgba(53,133,142,0.15)] prose-pre:rounded-xl
+                    prose-hr:border-[rgba(53,133,142,0.15)]
+                  "
+                  >
+                    <ReactMarkdown>{msg.content}</ReactMarkdown>
                   </div>
+                ) : (
+                  <p>{msg.content}</p>
                 )}
               </div>
             </div>
           </div>
         ))}
+
         {isTyping && (
           <div className="flex w-full justify-start">
-            <div className="max-w-[80%] flex gap-4 py-4 px-5 rounded-2xl leading-relaxed text-[0.95rem] animate-slide-up bg-[rgba(255,255,255,0.6)] border border-[rgba(53,133,142,0.1)] rounded-bl-sm items-center">
+            <div className="max-w-[80%] flex gap-4 py-4 px-5 items-center rounded-2xl leading-relaxed animate-slide-up bg-[rgba(255,255,255,0.6)] border border-[rgba(53,133,142,0.1)] rounded-bl-sm">
               <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 bg-gradient-to-br from-accent-color to-secondary-color text-white">
                 <Bot className="w-5 h-5" />
               </div>
-              <div className="flex gap-1.5 items-center h-full">
+              <div className="flex gap-1.5 items-center">
                 <span
                   className="w-1.5 h-1.5 bg-text-secondary rounded-full animate-typing"
                   style={{ animationDelay: "-0.32s" }}
-                ></span>
+                />
                 <span
                   className="w-1.5 h-1.5 bg-text-secondary rounded-full animate-typing"
                   style={{ animationDelay: "-0.16s" }}
-                ></span>
-                <span className="w-1.5 h-1.5 bg-text-secondary rounded-full animate-typing"></span>
+                />
+                <span className="w-1.5 h-1.5 bg-text-secondary rounded-full animate-typing" />
               </div>
             </div>
           </div>
@@ -150,25 +207,25 @@ export function ChatInterface() {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-6 border-t border-[rgba(53,133,142,0.1)] relative z-10 bg-[rgba(255,255,255,0.3)]">
+      <div className="p-6 relative z-10 bg-[rgba(255,255,255,0.3)]">
         <form
           onSubmit={handleSubmit}
-          className="flex gap-3 bg-[rgba(255,255,255,0.5)] border border-[rgba(53,133,142,0.2)] rounded-2xl p-2 transition-all duration-500 hover:bg-[rgba(255,255,255,0.7)] focus-within:border-[rgba(53,133,142,0.5)] focus-within:bg-[rgba(255,255,255,0.9)] focus-within:shadow-[0_0_30px_rgba(53,133,142,0.15)] backdrop-blur-sm"
+          className="flex gap-3 bg-[rgba(255,255,255,0.5)] border border-[rgba(53,133,142,0.2)] rounded-2xl !px-4 !py-2 transition-all duration-500 hover:bg-[rgba(255,255,255,0.7)] focus-within:border-[rgba(53,133,142,0.5)] focus-within:bg-[rgba(255,255,255,0.9)] focus-within:shadow-[0_0_30px_rgba(53,133,142,0.15)] backdrop-blur-sm"
         >
           <textarea
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask anything about your documents..."
-            className="flex-1 bg-transparent border-none text-text-primary text-base resize-none outline-none p-3 max-h-38 min-h-6 placeholder:text-[rgba(31,41,55,0.4)]"
-            rows={1}
+            className="flex-1 pl-2 bg-transparent border-none text-text-primary text-base resize-none outline-none p-3 placeholder:text-[rgba(31,41,55,0.4)]"
+            rows={2}
           />
           <button
             type="submit"
-            className="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-r from-accent-color to-secondary-color text-white transition-all duration-300 shrink-0 self-end disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed hover:not-disabled:scale-105 hover:not-disabled:shadow-[0_0_20px_rgba(53,133,142,0.4)]"
-            disabled={!inputValue.trim()}
+            disabled={!inputValue.trim() || isTyping}
+            className="flex items-center justify-center size-7 rounded-xl bg-gradient-to-r from-accent-color to-secondary-color text-white transition-all duration-300 shrink-0 self-end disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed hover:not-disabled:scale-105 hover:not-disabled:shadow-[0_0_20px_rgba(53,133,142,0.4)]"
           >
-            <Send className="w-5 h-5" />
+            <Send className="size-4" />
           </button>
         </form>
       </div>

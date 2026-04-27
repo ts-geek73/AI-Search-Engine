@@ -253,10 +253,10 @@ export function Sidebar() {
           )}
         </label>
       </div>
-      {/* {uploadError && (
+      {uploadError && (
         <p className="text-xs text-red-600 px-1">{uploadError}</p>
-      )} */}
-      {/* {docsError && <p className="text-xs text-red-600 px-1">{docsError}</p>} */}
+      )}
+      {docsError && <p className="text-xs text-red-600 px-1">{docsError}</p>}
 
       <div className="flex-1 flex flex-col !px-6 !pb-6">
         <h3 className="text-[0.85rem] uppercase tracking-wider text-text-secondary mb-4 font-semibold">

@@ -35,7 +35,17 @@ export async function DELETE(
     if (storageError) {
       return Response.json({ error: storageError.message }, { status: 500 });
     }
+    const { error: chunkDeleteError } = await supabase
+      .from("doc_chunks")
+      .delete()
+      .eq("doc_id", id);
 
+    if (chunkDeleteError) {
+      return Response.json(
+        { error: chunkDeleteError.message },
+        { status: 500 },
+      );
+    }
     const { error: deleteError } = await supabase
       .from("docs")
       .delete()
