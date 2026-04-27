@@ -3,6 +3,8 @@
 import { Bot, Send, User } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
 const MIN_ROWS = 1;
 const MAX_ROWS = 5;
 const LINE_HEIGHT = 24;
@@ -194,7 +196,7 @@ export function ChatInterface() {
                     prose-hr:border-[rgba(53,133,142,0.15)]
                   "
                   >
-                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
                   </div>
                 ) : (
                   <p>{msg.content}</p>
