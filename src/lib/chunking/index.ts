@@ -1,4 +1,3 @@
-import path from "path";
 import { PDFParse } from "pdf-parse";
 import {
   CHUNK_MAX_CHARS,
@@ -10,20 +9,16 @@ import {
   splitIntoSentences,
 } from "./utiles";
 
-PDFParse.setWorker(
-  path.resolve(
-    process.cwd(),
-    "node_modules/pdf-parse/dist/pdf-parse/cjs/pdf.worker.mjs",
-  ),
-);
+import { CanvasFactory } from "pdf-parse/worker";
 
+export const runtime = "nodejs";
 function decodeHtmlEntities(text: string): string {
   return text
     .replace(/&nbsp;/gi, " ")
     .replace(/&amp;/gi, "&")
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">")
-    .replace(/&quot;/gi, "\"")
+    .replace(/&quot;/gi, '"')
     .replace(/&#39;/gi, "'");
 }
 
@@ -31,7 +26,10 @@ function stripHtmlMarkup(text: string): string {
   return text
     .replace(/<style[\s\S]*?<\/style>/gi, " ")
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
-    .replace(/<\/?(div|p|br|li|ul|ol|h[1-6]|section|article|header|footer|main|span|a|strong|em|b|i)[^>]*>/gi, "\n")
+    .replace(
+      /<\/?(div|p|br|li|ul|ol|h[1-6]|section|article|header|footer|main|span|a|strong|em|b|i)[^>]*>/gi,
+      "\n",
+    )
     .replace(/<[^>]+>/g, " ");
 }
 
@@ -153,7 +151,7 @@ export async function extractDocumentText(params: {
 
   if (mimeType === "application/pdf" || name.endsWith(".pdf")) {
     const uint8Array = new Uint8Array(fileBuffer);
-    const parser = new PDFParse({ data: uint8Array });
+    const parser = new PDFParse({ data: uint8Array, CanvasFactory });
     const parsed = await parser.getText();
     await parser.destroy();
     return parsed.text ?? "";

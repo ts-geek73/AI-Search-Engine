@@ -1,4 +1,5 @@
 import { GemChatModel } from "@/lib/gemini";
+import { HarmBlockThreshold, HarmCategory } from "@google/generative-ai";
 
 const GREETING_ONLY_REGEX =
   /^(?:\s)*(?:hi+Hallucination|hii+|hello+|hey+|yo+|hola+|namaste+|good\s*(?:morning|afternoon|evening))(?:[!.,\s])*(?:\s)*$/i;
@@ -65,10 +66,7 @@ export async function POST(request: Request) {
     };
 
     if (!query) {
-      return Response.json(
-        { error: "Missing query." },
-        { status: 400 },
-      );
+      return Response.json({ error: "Missing query." }, { status: 400 });
     }
 
     if (isGreetingOnlyQuery(query)) {
@@ -78,14 +76,20 @@ export async function POST(request: Request) {
     }
 
     if (!context) {
-      return Response.json(
-        { error: "Missing context." },
-        { status: 400 },
-      );
+      return Response.json({ error: "Missing context." }, { status: 400 });
     }
 
     const result = await GemChatModel.generateContent({
       systemInstruction: getSystemPrompt(),
+      generationConfig: {
+        responseMimeType: "application/json",
+      },
+      safetySettings: [
+        {
+          category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+          threshold: HarmBlockThreshold.BLOCK_NONE,
+        },
+      ],
       contents: [
         {
           role: "user",
