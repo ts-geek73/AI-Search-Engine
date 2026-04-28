@@ -1,5 +1,12 @@
 import { GemChatModel } from "@/lib/gemini";
 
+const GREETING_ONLY_REGEX =
+  /^(?:\s)*(?:hi+Hallucination|hii+|hello+|hey+|yo+|hola+|namaste+|good\s*(?:morning|afternoon|evening))(?:[!.,\s])*(?:\s)*$/i;
+
+function isGreetingOnlyQuery(query: string): boolean {
+  return GREETING_ONLY_REGEX.test(query);
+}
+
 const getSystemPrompt = () => `
 You are an expert document analyst and knowledge synthesizer. Your role is to deliver precise, insightful, and well-structured answers derived exclusively from the provided document context.
 
@@ -57,9 +64,22 @@ export async function POST(request: Request) {
       context: string;
     };
 
-    if (!query || !context) {
+    if (!query) {
       return Response.json(
-        { error: "Missing query or context." },
+        { error: "Missing query." },
+        { status: 400 },
+      );
+    }
+
+    if (isGreetingOnlyQuery(query)) {
+      return Response.json({
+        answer: "Hi! Please ask your document-related question.",
+      });
+    }
+
+    if (!context) {
+      return Response.json(
+        { error: "Missing context." },
         { status: 400 },
       );
     }
