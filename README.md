@@ -50,6 +50,13 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
 # Google Gemini API
 GEMINI_API_KEY=your_gemini_api_key
+
+# Optional BM25 Retrieval Tuning
+BM25_INDEX_TTL_SECONDS=300
+BM25_STRONG_MIN_RATIO=1.15
+BM25_STRONG_MIN_COVERAGE=0.55
+BM25_MIN_HITS=3
+BM25_CANDIDATE_CAP=200
 ```
 
 ### 3. Database Setup

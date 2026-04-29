@@ -1,5 +1,6 @@
 import { extractTextAndCreateChunks } from "@/lib/chunking";
 import { GemEmbeddingModel } from "@/lib/gemini";
+import { invalidateBm25IndexCache } from "@/lib/retrieval/bm25";
 import { DOCS_BUCKET, getSupabaseServerClient } from "@/lib/supabase/server";
 import { uploadSchema } from "@/schemas/file";
 import { sanitizeFileName } from "@/utils/sanitizeFileName";
@@ -107,6 +108,8 @@ export async function POST(request: Request) {
         { status: 500 },
       );
     }
+
+    invalidateBm25IndexCache();
 
     return Response.json(
       {

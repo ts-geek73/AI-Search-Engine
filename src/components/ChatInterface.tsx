@@ -2,8 +2,7 @@
 
 import { Bot, Send, User } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import MarkdownBlock from "./MarkDownBlock";
 
 const MIN_ROWS = 1;
 const MAX_ROWS = 5;
@@ -75,7 +74,7 @@ export function ChatInterface() {
       const searchRes = await fetch("/api/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query, matchCount: 10 }),
+        body: JSON.stringify({ query, matchCount: 5 }),
       });
 
       const searchPayload = (await searchRes.json()) as {
@@ -196,7 +195,7 @@ export function ChatInterface() {
                     prose-hr:border-[rgba(53,133,142,0.15)]
                   "
                   >
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                    <MarkdownBlock content={msg.content} />
                   </div>
                 ) : (
                   <p>{msg.content}</p>

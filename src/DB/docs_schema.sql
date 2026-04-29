@@ -70,3 +70,34 @@ as $$
   order by embedding <=> query_embedding
   limit match_count;
 $$;
+
+create or replace function match_doc_chunks_subset(
+  query_embedding vector(3072),
+  candidate_ids uuid[],
+  match_count int default 8,
+  match_threshold float default 0.5
+)
+returns table (
+  id uuid,
+  doc_id uuid,
+  chunk_index int,
+  title text,
+  content text,
+  similarity float
+)
+language sql stable
+as $$
+  select
+    id,
+    doc_id,
+    chunk_index,
+    title,
+    content,
+    1 - (embedding <=> query_embedding) as similarity
+  from doc_chunks
+  where
+    id = any(candidate_ids)
+    and 1 - (embedding <=> query_embedding) > match_threshold
+  order by embedding <=> query_embedding
+  limit match_count;
+$$;

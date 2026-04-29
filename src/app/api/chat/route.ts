@@ -8,7 +8,7 @@ function isGreetingOnlyQuery(query: string): boolean {
   return GREETING_ONLY_REGEX.test(query);
 }
 
-const getSystemPrompt = () => `
+const SystemPrompt = `
 You are an expert document analyst and knowledge synthesizer. Your role is to deliver precise, insightful, and well-structured answers derived exclusively from the provided document context.
 
 ## Core Directives:
@@ -80,10 +80,7 @@ export async function POST(request: Request) {
     }
 
     const result = await GemChatModel.generateContent({
-      systemInstruction: getSystemPrompt(),
-      generationConfig: {
-        responseMimeType: "application/json",
-      },
+      systemInstruction: SystemPrompt,
       safetySettings: [
         {
           category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,

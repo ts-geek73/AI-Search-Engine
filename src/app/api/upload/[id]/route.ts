@@ -1,3 +1,4 @@
+import { invalidateBm25IndexCache } from "@/lib/retrieval/bm25";
 import { DOCS_BUCKET, getSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -54,6 +55,8 @@ export async function DELETE(
     if (deleteError) {
       return Response.json({ error: deleteError.message }, { status: 500 });
     }
+
+    invalidateBm25IndexCache();
 
     return Response.json({ message: "Document deleted successfully." });
   } catch (error) {

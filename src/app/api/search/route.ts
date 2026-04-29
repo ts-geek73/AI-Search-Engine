@@ -1,4 +1,10 @@
 import { GemEmbeddingModel } from "@/lib/gemini";
+import { searchDocChunksWithBm25 } from "@/lib/retrieval/bm25";
+import {
+  rerankMatches,
+  runRetrievalPipeline,
+  type SearchMatch,
+} from "@/lib/retrieval/pipeline";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -8,54 +14,27 @@ interface SearchRequest {
   matchCount?: number;
 }
 
-interface SearchMatch {
-  id: string;
-  doc_id: string;
-  chunk_index: number;
-  title: string | null;
-  content: string;
-  similarity: number;
+function parsePositiveNumber(value: string | undefined, fallback: number): number {
+  if (!value) return fallback;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return parsed;
 }
 
-function tokenize(text: string): string[] {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, " ")
-    .split(/\s+/)
-    .filter((token) => token.length > 2);
-}
-
-function scoreLexicalOverlap(query: string, content: string): number {
-  const queryTokens = new Set(tokenize(query));
-  if (!queryTokens.size) return 0;
-
-  const contentTokens = new Set(tokenize(content));
-  let overlapCount = 0;
-  for (const token of queryTokens) {
-    if (contentTokens.has(token)) overlapCount += 1;
-  }
-
-  return overlapCount / queryTokens.size;
-}
-
-function rerankMatches(query: string, matches: SearchMatch[]): SearchMatch[] {
-  if (matches.length <= 1) return matches;
-
-  const maxSimilarity = Math.max(...matches.map((m) => m.similarity || 0), 0);
-
-  return [...matches].sort((a, b) => {
-    const aSemantic = maxSimilarity > 0 ? a.similarity / maxSimilarity : 0;
-    const bSemantic = maxSimilarity > 0 ? b.similarity / maxSimilarity : 0;
-
-    const aLexical = scoreLexicalOverlap(query, `${a.title ?? ""} ${a.content}`);
-    const bLexical = scoreLexicalOverlap(query, `${b.title ?? ""} ${b.content}`);
-
-    const aScore = 0.75 * aSemantic + 0.25 * aLexical;
-    const bScore = 0.75 * bSemantic + 0.25 * bLexical;
-
-    return bScore - aScore;
-  });
-}
+const BM25_STRONG_MIN_RATIO = parsePositiveNumber(
+  process.env.BM25_STRONG_MIN_RATIO,
+  1.15,
+);
+const BM25_STRONG_MIN_COVERAGE = parsePositiveNumber(
+  process.env.BM25_STRONG_MIN_COVERAGE,
+  0.55,
+);
+const BM25_MIN_HITS = Math.floor(
+  parsePositiveNumber(process.env.BM25_MIN_HITS, 3),
+);
+const BM25_CANDIDATE_CAP = Math.floor(
+  parsePositiveNumber(process.env.BM25_CANDIDATE_CAP, 200),
+);
 
 export async function POST(request: Request) {
   try {
@@ -67,24 +46,45 @@ export async function POST(request: Request) {
       return Response.json({ error: "Query is required." }, { status: 400 });
     }
 
-    const embeddingResult = await GemEmbeddingModel.embedContent(query);
-    const queryEmbedding = embeddingResult.embedding.values;
-
     const supabase = getSupabaseServerClient();
+    const result = await runRetrievalPipeline({
+      query,
+      matchCount,
+      options: {
+        strongMinRatio: BM25_STRONG_MIN_RATIO,
+        strongMinCoverage: BM25_STRONG_MIN_COVERAGE,
+        minHits: BM25_MIN_HITS,
+        candidateCap: BM25_CANDIDATE_CAP,
+      },
+      deps: {
+        bm25Search: (rawQuery, limit) =>
+          searchDocChunksWithBm25({
+            query: rawQuery,
+            limit,
+            supabase,
+          }),
+        embedQuery: async (rawQuery) => {
+          const embeddingResult = await GemEmbeddingModel.embedContent(rawQuery);
+          return embeddingResult.embedding.values;
+        },
+        vectorSearchSubset: async ({ queryEmbedding, candidateIds, matchCount }) => {
+          const { data, error } = await supabase.rpc("match_doc_chunks_subset", {
+            query_embedding: queryEmbedding,
+            candidate_ids: candidateIds,
+            match_count: matchCount,
+          });
 
-    const { data, error } = await supabase.rpc("match_doc_chunks", {
-      query_embedding: queryEmbedding,
-      match_count: matchCount,
+          if (error) {
+            throw new Error(error.message);
+          }
+
+          return (data ?? []) as SearchMatch[];
+        },
+        rerank: (rawQuery, matches) => rerankMatches(rawQuery, matches),
+      },
     });
 
-    if (error) {
-      return Response.json({ error: error.message }, { status: 500 });
-    }
-
-    const rawMatches = (data ?? []) as SearchMatch[];
-    const rankedMatches = rerankMatches(query, rawMatches).slice(0, matchCount);
-
-    return Response.json({ matches: rankedMatches });
+    return Response.json(result);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unexpected server error.";
