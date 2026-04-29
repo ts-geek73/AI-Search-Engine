@@ -160,7 +160,7 @@ export function ChatInterface() {
             className={`flex w-full ${msg.type === "user" ? "justify-end" : "justify-start"}`}
           >
             <div
-              className={`max-w-[85%] flex py-4 px-5 rounded-xl leading-relaxed text-[0.95rem] animate-slide-up shadow-lg ${
+              className={`max-w-[85%] flex  rounded-xl leading-relaxed text-[0.95rem] animate-slide-up shadow-lg ${
                 msg.type === "bot"
                   ? "bg-[rgba(255,255,255,0.7)] backdrop-blur-md border border-[rgba(53,133,142,0.2)] shadow-[0_4px_30px_rgba(53,133,142,0.1)]"
                   : "bg-gradient-to-br from-[rgba(53,133,142,0.15)] to-[rgba(125,167,140,0.15)] backdrop-blur-md border border-[rgba(53,133,142,0.1)]  flex-row-reverse shadow-[0_4px_30px_rgba(53,133,142,0.1)]"
@@ -180,7 +180,7 @@ export function ChatInterface() {
                 )}
               </div>
 
-              <div className="flex flex-col justify-center !px-2 text-text-primary min-w-0">
+              <div className="flex flex-col justify-center !p-2 text-text-primary min-w-0">
                 {msg.type === "bot" ? (
                   <div
                     className="prose prose-sm max-w-none
